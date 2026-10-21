@@ -62,8 +62,9 @@
 
               source .venv/bin/activate
 
-              if [ -f "requirements.txt" ]; then
-                uv pip install -r requirements.txt
+              if [ -f "requirements.txt" ] && ! uv pip install --dry-run -r requirements.txt 2>&1 | grep -q "Would make no changes"; then
+                echo "Requirements not satisfied. Run: uv pip install -r requirements.txt"
+                return 0;
               fi
 
               echo "Environment ready, sir."
