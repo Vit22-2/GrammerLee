@@ -1,3 +1,4 @@
 .cache
 .venv
 *.pdf
+src/__pycache__
