@@ -33,6 +33,13 @@
               typst
             ];
 
+            LD_LIBRARY_PATH =
+              with pkgs;
+              lib.makeLibraryPath [
+                stdenv.cc.cc.lib
+                zlib
+              ];
+
             # The purpose of shellHook is to fully isolate the environments, so
             # nothing leaves the project, you are very welcome.
             shellHook = /* bash */ ''
