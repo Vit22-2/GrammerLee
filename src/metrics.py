@@ -3,6 +3,8 @@ import math
 TRIGRAM_CONTEXT_SIZE = 2
 BOS = "<s>"
 EOS = "</s>"
+GPT2_CONTEXT_SIZE = 1024
+GPT2_STRIDE = 512
 
 
 def perplexity(total_log_prob, n_units):
@@ -25,6 +27,39 @@ def trigram_total_log_prob(model, sentences):
             context = tuple(sent[i - TRIGRAM_CONTEXT_SIZE : i])
             word = sent[i]
             total += model.log_prob(context, word)
+    return total
+
+
+def gpt2_total_log_prob(
+    model, tokenizer, text, max_length=GPT2_CONTEXT_SIZE, stride=GPT2_STRIDE
+):
+    import torch
+
+    device = next(model.parameters()).device
+    model.eval()
+
+    ids = tokenizer(tokenizer.eos_token + text, return_tensors="pt").input_ids
+    seq_len = ids.size(1)
+
+    total = 0.0
+    prev_end = 0
+    for begin in range(0, seq_len, stride):
+        end = min(begin + max_length, seq_len)
+        new_tokens = end - prev_end
+
+        window = ids[:, begin:end].to(device)
+        labels = window.clone()
+        labels[:, :-new_tokens] = -100
+
+        with torch.no_grad():
+            mean_nll = model(window, labels=labels).loss.item()
+
+        n_scored = int((labels[:, 1:] != -100).sum())
+        total -= mean_nll * n_scored
+
+        prev_end = end
+        if end == seq_len:
+            break
     return total
 
 
