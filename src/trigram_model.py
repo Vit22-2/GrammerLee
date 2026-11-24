@@ -68,41 +68,32 @@ class TrigramLanguageModel:
         self._fitted = True
         return self
 
-    def _p_uni(self, w3):
-        d = self.d
-        total = self.total_bigram_types
-        p = max(self.cont_uni.get(w3, 0) - d, 0) / total
-        leftover = d * len(self.cont_uni) / total
-        return p + leftover / self.vocab_size
-
-    def _p_bi(self, w2, w3):
-        d = self.d
-        ctx = self.cont_bi_total.get(w2, 0)
-        if ctx == 0:
-            return self._p_uni(w3)
-        p = max(self.cont_bi.get((w2, w3), 0) - d, 0) / ctx
-        lam = d * self.followers[w2] / ctx
-        return p + lam * self._p_uni(w3)
-
-    def kneser_ney_prob(self, w1, w2, w3):
-        d = self.d
-        c_ctx = self.bigram_counts.get((w1, w2), 0)
-        if c_ctx == 0:
-            return self._p_bi(w2, w3)
-        c3 = self.trigram_counts[(w1, w2)].get(w3, 0)
-        lam = d * len(self.trigram_counts[(w1, w2)]) / c_ctx
-        return max(c3 - d, 0) / c_ctx + lam * self._p_bi(w2, w3)
-
-    def mle_prob(self, w1, w2, w3):
-        context_count = self.bigram_counts.get((w1, w2), 0)
-        if context_count == 0:
-            return 0.0
-        return self.trigram_counts.get((w1, w2), {}).get(w3, 0) / context_count
-
-    def laplace_prob(self, w1, w2, w3):
-        c3 = self.trigram_counts.get((w1, w2), {}).get(w3, 0)
-        c2 = self.bigram_counts.get((w1, w2), 0)
-        return (c3 + 1) / (c2 + self.vocab_size)
+    def _kn_prob(self, w1: str, w2: str, w3: str) -> float:
+        d = self.discount
+        p_uni = self._p_uni[w3]
+ 
+        bi = self._bi.get(w2)
+        if bi is None:                                   # w2 never had a follower
+            p_bi = p_uni
+        else:
+            total, lam = bi
+            p_bi = max(self._cont_bi.get((w2, w3), 0) - d, 0.0) / total + lam * p_uni
+ 
+        tri = self._tri.get((w1, w2))
+        if tri is None:                                  # unseen context -> back off
+            return p_bi
+        counts, total, lam = tri
+        c = counts.get(w3, 0)
+        if c:
+            return (c - d) / total + lam * p_bi
+        return lam * p_bi
+ 
+    def _laplace_prob(self, w1: str, w2: str, w3: str) -> float:
+        tri = self._tri.get((w1, w2))
+        if tri is None:
+            return 1.0 / self._V
+        counts, total, _ = tri
+        return (counts.get(w3, 0) + 1) / (total + self._V)
 
     def log_prob(self, context: Tuple[str, str], word: str) -> float:
         """Natural log of P(word | context). context = (w_{t-2}, w_{t-1}). Never -inf."""
