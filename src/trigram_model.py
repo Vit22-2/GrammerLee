@@ -1,4 +1,5 @@
 from collections import defaultdict, Counter
+import math
 import random
 
 UNK = "<UNK>"
@@ -102,6 +103,20 @@ class TrigramLanguageModel:
         c3 = self.trigram_counts.get((w1, w2), {}).get(w3, 0)
         c2 = self.bigram_counts.get((w1, w2), 0)
         return (c3 + 1) / (c2 + self.vocab_size)
+
+    def log_prob(self, context: Tuple[str, str], word: str) -> float:
+        """Natural log of P(word | context). context = (w_{t-2}, w_{t-1}). Never -inf."""
+        if not self._fitted:
+            raise RuntimeError("Call fit() first.")
+        vocab = self.vocab
+        w1, w2 = context
+        if w1 not in vocab:
+            w1 = UNK
+        if w2 not in vocab:
+            w2 = UNK
+        if word not in vocab:
+            word = UNK
+        return math.log(self._prob(w1, w2, word))
 
     def generate(self, prompt_tokens, max_len=20, smoothing="laplace"):
         w1, w2 = prompt_tokens[-2:]
