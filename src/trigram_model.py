@@ -121,8 +121,8 @@ class TrigramLanguageModel:
                 n += 1
         return math.exp(-total / n)
 
-    def generate(self, prompt: str, max_new_tokens: int = 20, seed=None) -> str:
-        """Continue a plain-text prompt (e.g. "the first"). Returns only the new words."""
+    def generate(self, prompt: str, max_new_tokens: int = 20, seed=42) -> str:
+        """Continue a plain-text prompt (e.g. "the first"). Returns prompt + continuation."""
         if not self._fitted:
             raise RuntimeError("Call fit() first.")
         rng = random.Random(seed)
