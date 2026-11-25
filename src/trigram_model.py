@@ -109,24 +109,22 @@ class TrigramLanguageModel:
             word = UNK
         return math.log(self._prob(w1, w2, word))
 
-    def generate(self, prompt_tokens, max_len=20, smoothing="laplace"):
-        w1, w2 = prompt_tokens[-2:]
-        output = [w1, w2]
-
-        prob_fn = {"mle": self.mle_prob, "laplace": self.laplace_prob,
-                "kn": self.kneser_ney_prob}[smoothing]
-
-        for _ in range(max_len):
-            candidates = self.trigram_counts.get((w1, w2))
-            if not candidates:
+    def generate(self, prompt: str, max_new_tokens: int = 20, seed=None) -> str:
+        """Continue a plain-text prompt (e.g. "the first"). Returns only the new words."""
+        if not self._fitted:
+            raise RuntimeError("Call fit() first.")
+        rng = random.Random(seed)
+        words = [w if w in self.vocab else UNK for w in prompt.lower().split()]
+        history = [BOS, BOS] + words          # pads prompts shorter than 2 words
+        w1, w2 = history[-2], history[-1]
+ 
+        choices = self._gen_vocab
+        out = []
+        for _ in range(max_new_tokens):
+            weights = [self._prob(w1, w2, w) for w in choices]
+            nxt = rng.choices(choices, weights=weights, k=1)[0]
+            if nxt == EOS:
                 break
-
-            words, probs = zip(*[(w3, prob_fn(w1, w2, w3)) for w3 in candidates])
-            next_word = random.choices(words, weights=probs, k=1)[0]
-
-            if next_word == "</s>":
-                break
-            output.append(next_word)
-            w1, w2 = w2, next_word
-
-        return " ".join(w for w in output if w not in ("<s>", "</s>"))
+            out.append(nxt)
+            w1, w2 = w2, nxt
+        return " ".join(out)
