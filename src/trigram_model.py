@@ -139,4 +139,4 @@ class TrigramLanguageModel:
                 break
             out.append(nxt)
             w1, w2 = w2, nxt
-        return " ".join(out)
+        return " ".join([prompt] + out)
