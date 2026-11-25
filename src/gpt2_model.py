@@ -17,13 +17,13 @@ class GPT2TextGenerator:
         self.model = GPT2LMHeadModel.from_pretrained(model_name).to(self.device)
         self.model.eval()
 
-    def generate(self, prompt: str, max_new_tokens: int = 30) -> str:
+    def generate(self, prompt: str, max_new_tokens: int = 30, seed: int = 42) -> str:
         """
         Generates a continuation for the given raw text prompt using fixed
         sampling settings and a fixed seed for reproducibility.
         Returns the prompt plus its continuation as plain text.
         """
-        set_seed(42)
+        set_seed(seed)
 
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 

@@ -112,7 +112,7 @@ class TrigramLanguageModel:
             word = UNK
         return math.log(self._prob(w1, w2, word))
 
-    def generate(self, prompt: str, max_new_tokens: int = 20, seed=42) -> str:
+    def generate(self, prompt: str, max_new_tokens: int = 20, seed: int = 42) -> str:
         """Continue a plain-text prompt (e.g. "the first"). Returns prompt + continuation."""
         if not self._fitted:
             raise RuntimeError("Call fit() first.")
