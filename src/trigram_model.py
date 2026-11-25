@@ -112,15 +112,6 @@ class TrigramLanguageModel:
             word = UNK
         return math.log(self._prob(w1, w2, word))
 
-    def perplexity(self, sentences: Iterable[Sequence[str]]) -> float:
-        """Per-token perplexity over padded sentences (the two <s> are context only)."""
-        total, n = 0.0, 0
-        for sent in sentences:
-            for i in range(2, len(sent)):
-                total += self.log_prob((sent[i - 2], sent[i - 1]), sent[i])
-                n += 1
-        return math.exp(-total / n)
-
     def generate(self, prompt: str, max_new_tokens: int = 20, seed=42) -> str:
         """Continue a plain-text prompt (e.g. "the first"). Returns prompt + continuation."""
         if not self._fitted:
