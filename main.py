@@ -14,6 +14,7 @@ GPT2_NAME = "gpt2"
 N_TEST_PARAGRAPHS = None
 PROMPTS = ("the history", "in the", "he was")
 MAX_NEW_TOKENS = 30
+SEED = 42
 
 
 def main():
@@ -44,7 +45,7 @@ def main():
     for prompt in PROMPTS:
         print(f"\nPrompt: {prompt!r}")
         for name, generator in generators.items():
-            print(f"  [{name}] {generator.generate(prompt, MAX_NEW_TOKENS)}")
+            print(f"  [{name}] {generator.generate(prompt, MAX_NEW_TOKENS, seed=SEED)}")
 
 
 if __name__ == "__main__":
