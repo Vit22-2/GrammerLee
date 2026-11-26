@@ -35,6 +35,11 @@ def parse_args():
         default=MAX_NEW_TOKENS,
         help="length limit for --prompt, in GPT-2 tokens (default: %(default)s)",
     )
+    parser.add_argument(
+        "--suggest",
+        action="store_true",
+        help="interactive next-word suggestions with GPT-2",
+    )
     return parser.parse_args()
 
 
@@ -79,6 +84,49 @@ def run_prompt(prompt, max_new_tokens):
     print(trim_to_sentence(text, prompt))
 
 
+CLEAR_SCREEN = "\033[2J\033[H"
+NO_SPACE_BEFORE = ".,;:!?)]}%"
+
+
+def append_text(text, piece):
+    if not text or piece[0] in NO_SPACE_BEFORE:
+        return text + piece
+    return f"{text} {piece}"
+
+
+def draw(text, suggestions):
+    if sys.stdout.isatty():
+        print(CLEAR_SCREEN, end="")
+    print(
+        "Type text and press Enter. Type 1-3 to pick a suggestion. Empty line quits.\n"
+    )
+    print(f"{text}\n")
+    print("   ".join(f"{i}) {w}" for i, w in enumerate(suggestions, 1)))
+
+
+def run_suggest():
+    with waiting("Loading GPT-2"), redirect_stderr(io.StringIO()):
+        from src.gpt2_model import GPT2TextGenerator
+        from src.suggest import suggest_next_words
+
+        gpt2 = GPT2TextGenerator(GPT2_NAME)
+
+    text, suggestions = "", []
+    try:
+        while True:
+            draw(text, suggestions)
+            line = input("\n> ").strip()
+            if not line:
+                break
+            if line in ("1", "2", "3") and int(line) <= len(suggestions):
+                line = suggestions[int(line) - 1]
+            text = append_text(text, line)
+            suggestions = suggest_next_words(gpt2.model, gpt2.tokenizer, text)
+    except (EOFError, KeyboardInterrupt):
+        pass
+    print()
+
+
 def run_full_benchmark():
     from src.data_loader import load_wikitext
     from src.gpt2_model import GPT2TextGenerator
@@ -118,7 +166,9 @@ def run_full_benchmark():
 
 def main():
     args = parse_args()
-    if args.prompt:
+    if args.suggest:
+        run_suggest()
+    elif args.prompt:
         run_prompt(args.prompt, args.max_new_tokens)
     else:
         run_full_benchmark()
