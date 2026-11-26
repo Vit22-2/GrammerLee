@@ -16,6 +16,8 @@ pip install -r requirements.txt
 
 ## Run
 
+### Benchmark
+
 ```
 python main.py
 ```
@@ -28,17 +30,28 @@ a few prompts. For a quick test, set `N_TEST_PARAGRAPHS` at the top of `main.py`
 to a small number such as 50 (the scores are then not comparable with the
 full-test-set results below).
 
+### Continue a prompt with GPT-2
+
+```
+python main.py --prompt "the history of" --max-new-tokens 40
+```
+
+Prints GPT-2's continuation of the prompt.
+
+### Next-word suggestions
+
+```
+python main.py --suggest
+```
+
+Type some text and press Enter to see three suggested next words. Type `1`,
+`2` or `3` to append a suggestion, or keep typing.
+
+### All options
+
 ```
 python main.py --help
 ```
-
-To see available arguments that can be passed.
-
-```
-python main.py --prompt
-```
-
-To pass a prompt for the model to generate.
 
 ## Results (full WikiText-2 test set)
 
